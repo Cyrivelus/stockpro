@@ -6,7 +6,8 @@ from decouple import config
 # 1. Chemins de base
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# AJOUT CRUCIAL : Permet d'importer les apps directement (ex: 'inventory' au lieu de 'apps.inventory')
+# AJOUT CRUCIAL : On "injecte" le dossier apps dans le système Python
+# Cela permet d'écrire 'import inventory' au lieu de 'import apps.inventory'
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # 2. Sécurité
@@ -32,7 +33,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'django_extensions',
     
-    # Local apps (On utilise le nom direct car on a ajouté 'apps' au sys.path)
+    # Local apps (NOM DIRECT SANS "apps.")
     'accounts',
     'inventory',
     'personnel',
@@ -41,7 +42,7 @@ INSTALLED_APPS = [
 
 # 4. Middleware
 MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware', # Toujours en haut ou presque
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -64,7 +65,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages', # <--- CORRIGÉ ICI
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -80,7 +81,7 @@ DATABASES = {
     }
 }
 
-# 7. Internationalisation (Adapté au Cameroun)
+# 7. Internationalisation
 LANGUAGE_CODE = 'fr-fr'
 TIME_ZONE = 'Africa/Douala'
 USE_I18N = True
@@ -90,7 +91,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -98,12 +98,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-# 10. Authentification
-LOGIN_URL = 'login' # Ou 'accounts:login' si vous utilisez les namespaces
-LOGIN_REDIRECT_URL = 'dashboard'
+# 10. Authentification et Redirection
+LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'login'
+LOGIN_REDIRECT_URL = 'inventory:dashboard'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# 11. Debug Toolbar
 INTERNAL_IPS = ['127.0.0.1']
