@@ -3,6 +3,17 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.contrib import admin
+
+# Change le titre dans l'onglet du navigateur (ex: "Gestion de Stock | Admin")
+admin.site.site_title = "StockPro Admin"
+
+# Change le texte dans l'en-tête bleu de l'interface admin
+admin.site.site_header = "StockPro - Administration de l'Inventaire"
+
+# Change le texte sur la page de connexion et le titre de l'index
+admin.site.index_title = "Tableau de bord de gestion"
+
 urlpatterns = [
     # Administration Django
     path('admin/', admin.site.urls),
@@ -11,7 +22,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     
     # Application Inventaire (Racine du site)
-    path('', include('inventory.urls')),
+    path('', include('apps.inventory.urls')),
     
     # Autres Applications (SANS le préfixe "apps.")
     path('personnel/', include('personnel.urls')),

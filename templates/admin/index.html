@@ -1,0 +1,75 @@
+﻿{% extends "admin/index.html" %}
+{% block content %}
+    <div class="row">
+        <div class="col-lg-4 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ total_items }}</h3>
+                    <p>Articles en Stock</p>
+                </div>
+                <div class="icon"><i class="fas fa-box"></i></div>
+                <a href="/admin/inventory/item/" class="small-box-footer">Voir tout <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ critical_stock }}</h3>
+                    <p>Alertes Rupture (< 10)</p>
+                </div>
+                <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <a href="/admin/inventory/item/?quantity__lt=10" class="small-box-footer">Gérer les alertes <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ total_mouvements }}</h3>
+                    <p>Mouvements Aujourd'hui</p>
+                </div>
+                <div class="icon"><i class="fas fa-exchange-alt"></i></div>
+                <a href="/admin/inventory/movement/" class="small-box-footer">Historique <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-primary card-outline">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-line mr-1"></i> Activité des flux</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="stockChart" style="min-height: 250px; height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ chart_labels|safe }},
+                    datasets: [{
+                        label: 'Nombre de mouvements',
+                        data: {{ chart_data|safe }},
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        });
+    </script>
+{% endblock %}
