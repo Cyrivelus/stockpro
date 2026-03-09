@@ -25,7 +25,7 @@ else:
 
 # --- 4. APPLICATIONS ---
 INSTALLED_APPS = [
-    'jazzmin',  
+    'jazzmin',  # Doit rester en haut
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'django_prometheus',
     'debug_toolbar',
     
-    # Locaux
+    # Vos apps
     'accounts',
     'inventory', 
     'personnel',
@@ -54,7 +54,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Gestion statique
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -106,43 +106,37 @@ USE_TZ = True
 # --- 9. STATIQUES & MÉDIAS ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Vérifiez que le dossier 'static' existe à la racine C:\xampp\htdocs\stockpro\static
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# --- LA CORRECTION EST ICI ---
-# On dit à WhiteNoise de ne pas paniquer si un fichier .map est manquant
+# CORRECTION CRUCIALE : On retire "Manifest" pour éviter le crash sur les fichiers .map manquants
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 WHITENOISE_MANIFEST_STRICT = False 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(PERSISTENT_STORAGE_ROOT, 'media')
 
-# --- 10. SÉCURITÉ HTTPS ---
+# --- 10. SÉCURITÉ HTTPS (PROD) ---
 if not DEBUG:
     CSRF_TRUSTED_ORIGINS = ['https://stockpro-1-cuxp.onrender.com']
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
-# --- 11. JAZZMIN & AUTRES ---
+# --- 11. CONFIGURATION JAZZMIN ---
 JAZZMIN_SETTINGS = {
     "site_title": "StockPro Admin",
     "site_header": "StockPro",
     "site_brand": "StockPro Management",
     "welcome_sign": "Bienvenue sur StockPro",
     "copyright": "StockPro Ltd",
-    "search_model": ["auth.User", "inventory.Item"],
     "show_sidebar": True,
     "navigation_expanded": True,
     "changeform_format": "horizontal_tabs", 
     "changeform_format_overrides": {
         "auth.user": "single",
-        "auth.group": "horizontal_tabs",
-    },
-    "icons": {
-        "auth.user": "fas fa-user",
-        "inventory.Item": "fas fa-boxes",
-        "inventory.Movement": "fas fa-exchange-alt",
-        "inventory.Category": "fas fa-tags",
-        "personnel.Employee": "fas fa-users",
     },
 }
 
