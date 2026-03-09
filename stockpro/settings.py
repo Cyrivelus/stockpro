@@ -6,14 +6,12 @@ from decouple import config
 
 # --- 1. CHEMINS DE BASE ---
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Permet à Django de trouver vos apps dans le dossier 'apps'
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # --- 2. SÉCURITÉ & ENVIRONNEMENT ---
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-votre-cle-de-secours')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# Configuration dynamique des hôtes (Render + Local)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 if 'stockpro-1-cuxp.onrender.com' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('stockpro-1-cuxp.onrender.com')
@@ -27,7 +25,7 @@ else:
 
 # --- 4. APPLICATIONS ---
 INSTALLED_APPS = [
-    'jazzmin',  # Toujours en premier
+    'jazzmin',  
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -56,7 +54,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Indispensable pour CSS/JS sur Render
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -66,7 +64,6 @@ MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
-# Debug Toolbar seulement en local
 if DEBUG:
     MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
@@ -91,7 +88,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'stockpro.wsgi.application'
 
-# --- 7. BASE DE DONNÉES (Liaison au Disque Persistant) ---
+# --- 7. BASE DE DONNÉES ---
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -111,19 +108,21 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# Optimisation WhiteNoise
+# --- LA CORRECTION EST ICI ---
+# On dit à WhiteNoise de ne pas paniquer si un fichier .map est manquant
+WHITENOISE_MANIFEST_STRICT = False 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(PERSISTENT_STORAGE_ROOT, 'media')
 
-# --- 10. SÉCURITÉ HTTPS (PROD) ---
+# --- 10. SÉCURITÉ HTTPS ---
 if not DEBUG:
     CSRF_TRUSTED_ORIGINS = ['https://stockpro-1-cuxp.onrender.com']
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
 
-# --- 11. CONFIGURATION JAZZMIN ---
+# --- 11. JAZZMIN & AUTRES ---
 JAZZMIN_SETTINGS = {
     "site_title": "StockPro Admin",
     "site_header": "StockPro",
@@ -153,14 +152,10 @@ JAZZMIN_UI_CONFIG = {
     "theme": "flatly", 
 }
 
-# Paramètres Crispy Forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
-
-# Redirections
 LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_REDIRECT_URL = 'inventory:dashboard'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 INTERNAL_IPS = ['127.0.0.1']
