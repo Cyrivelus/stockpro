@@ -1,18 +1,31 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 from pathlib import Path
 from decouple import config
 
-# 1. Chemins de base
+# --- 1. CHEMINS DE BASE ---
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Permet à Django de trouver vos apps dans le dossier 'apps'
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
-# 2. Sécurité
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-key-change-in-production')
+# --- 2. SÉCURITÉ & ENVIRONNEMENT ---
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-votre-cle-de-secours')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
-# 3. Définition des Applications
+# Configuration dynamique des hôtes (Render + Local)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+if 'stockpro-1-cuxp.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('stockpro-1-cuxp.onrender.com')
+
+# --- 3. CONFIGURATION DU DISQUE PERSISTANT (RENDER) ---
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    PERSISTENT_STORAGE_ROOT = '/var/lib/stockpro'
+else:
+    PERSISTENT_STORAGE_ROOT = BASE_DIR
+
+# --- 4. APPLICATIONS ---
 INSTALLED_APPS = [
     'jazzmin',  # Toujours en premier
     'django.contrib.admin',
@@ -28,8 +41,9 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'import_export',
     'django_filters',
-    'debug_toolbar',
     'django_extensions',
+    'django_prometheus',
+    'debug_toolbar',
     
     # Locaux
     'accounts',
@@ -38,20 +52,27 @@ INSTALLED_APPS = [
     'reports',
 ]
 
-# 4. Middleware
+# --- 5. MIDDLEWARE ---
 MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware', # Debug toolbar en haut
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Indispensable pour CSS/JS sur Render
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
+
+# Debug Toolbar seulement en local
+if DEBUG:
+    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'stockpro.urls'
 
+# --- 6. TEMPLATES ---
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -70,37 +91,39 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'stockpro.wsgi.application'
 
+# --- 7. BASE DE DONNÉES (Liaison au Disque Persistant) ---
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.path.join(PERSISTENT_STORAGE_ROOT, 'db.sqlite3'),
     }
 }
 
+# --- 8. INTERNATIONALISATION ---
 LANGUAGE_CODE = 'fr-fr'
 TIME_ZONE = 'Africa/Douala'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# 8. Statiques (Vérifiez bien ces chemins !)
+# --- 9. STATIQUES & MÉDIAS ---
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Optimisation WhiteNoise
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join(PERSISTENT_STORAGE_ROOT, 'media')
 
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
+# --- 10. SÉCURITÉ HTTPS (PROD) ---
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = ['https://stockpro-1-cuxp.onrender.com']
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
 
-LOGIN_URL = 'login'
-LOGOUT_REDIRECT_URL = 'login'
-LOGIN_REDIRECT_URL = 'inventory:dashboard'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-INTERNAL_IPS = ['127.0.0.1']
-
-# --- CONFIGURATION JAZZMIN RADICALE (Anti-blocage) ---
+# --- 11. CONFIGURATION JAZZMIN ---
 JAZZMIN_SETTINGS = {
     "site_title": "StockPro Admin",
     "site_header": "StockPro",
@@ -110,16 +133,11 @@ JAZZMIN_SETTINGS = {
     "search_model": ["auth.User", "inventory.Item"],
     "show_sidebar": True,
     "navigation_expanded": True,
-    
-    # ICI EST LA CORRECTION : 
-    # On force le format "single" (une seule page sans onglets) pour l'utilisateur
-    # pour éviter que le JavaScript ne bloque l'affichage.
     "changeform_format": "horizontal_tabs", 
     "changeform_format_overrides": {
-        "auth.user": "single", # <--- FORCE TOUT LE FORMULAIRE À ÊTRE VISIBLE D'UN COUP
+        "auth.user": "single",
         "auth.group": "horizontal_tabs",
     },
-    
     "icons": {
         "auth.user": "fas fa-user",
         "inventory.Item": "fas fa-boxes",
@@ -130,18 +148,19 @@ JAZZMIN_SETTINGS = {
 }
 
 JAZZMIN_UI_CONFIG = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-primary",
-    "accent": "accent-primary",
-    "navbar": "navbar-dark-primary",
-    "no_navbar_border": False,
     "navbar_fixed": True,
-    "layout_boxed": False,
-    "footer_fixed": False,
     "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
     "theme": "flatly", 
 }
+
+# Paramètres Crispy Forms
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# Redirections
+LOGIN_URL = 'login'
+LOGOUT_REDIRECT_URL = 'login'
+LOGIN_REDIRECT_URL = 'inventory:dashboard'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+INTERNAL_IPS = ['127.0.0.1']
